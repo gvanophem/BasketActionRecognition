@@ -30,6 +30,8 @@ if __name__ == "__main__":
     parser.add_argument("--embed", default=32, type=int)
     args = parser.parse_args()
 
+    #GLOBAL PARAMETERS
+
     log_dir = os.path.join('Logs_LSTM')
     tb_callback = TensorBoard(log_dir=log_dir)
 
@@ -59,21 +61,29 @@ if __name__ == "__main__":
     data_X = []
     data_y = []
 
+    #DATA PREPROCESSING
+
     for field in os.listdir(path):
         print(field)
         if(field != TEST_DIRECTORY):
             for game in os.listdir(os.path.join(path, field)):
                 print(game)
+
+                #RETRIEVING THE DATA
                 annotations = read_json(os.path.join(path, field, game, "annotations.json"))
                 detections = read_json(os.path.join(path, field, game, "detections.json"))["detections_lists"]
                 detections.sort(key=lambda x:x['timestamp'])
+
+                #MODIFYING TRANSITIONS
                 actions_ts, actions_durations, actions_labels = clean_labels(annotations)
                 windows = []
                 labels = []
+
+                #GENERATION OF THE WINDOWS AND THEIR LABELS
                 for window, label in sliding_labels(actions_ts, actions_durations, actions_labels, detections, T):
                     data_window = data_to_train(window, WINDOW_SIZE)
-                    #sorted_window = sort_sequence(data_window)
-                    sorted_window = data_window.reshape((1,WINDOW_SIZE*3*(NUM_PLAYERS+NUM_REF)))
+                    sorted_window = sort_sequence(data_window)
+                    sorted_window = sorted_window.reshape((1,WINDOW_SIZE*3*(NUM_PLAYERS+NUM_REF)))
                     count_action_types[class_names_dic[label]] += 1
 
                     data_X.append(sorted_window)
@@ -85,10 +95,12 @@ if __name__ == "__main__":
     print(X.shape)
     X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
 
+    #CREATION OF THE CLS FOR EACH WINDOW
     cls_tokens = tf.Variable(tf.random.normal([X_tensor.shape[0], 1, embedding_dim]), name='cls_tokens')
 
     print(X_tensor.shape)
 
+    #CONCATENATION OF THE CLS TOKEN
     input_X = tf.concat([cls_tokens, X_tensor], axis=2)
     print(input_X.shape)
 
@@ -97,7 +109,7 @@ if __name__ == "__main__":
 
 
 
-    
+    #CREATION OF THE MODEL
     if T == 200:
         model=create_model(WINDOW_SIZE, SEQUENCE_LENGTH, second_dense=embedding_dim, third_dense=64, last_dense=64, n=2)
     else:
@@ -110,6 +122,7 @@ if __name__ == "__main__":
     num_labels = X.shape[0]
     val_length = num_labels//5
 
+    #CALCULATION OF CLASS WEIGHTS
     class_weights = {class_int:num_labels/(num_classes*count_label) for class_int,count_label in count_action_types.items()}
 
     print(class_weights)
@@ -122,11 +135,16 @@ if __name__ == "__main__":
     #NO VALIDATION
     print(input_X.shape)
     print(y.shape)
+
+
+    #FITTING THE MODEL
     if T==200:
         model.fit(X, y, epochs=args.epochs, callbacks=[tb_callback], batch_size=args.batch_size, class_weight=class_weights)
     else :
         model.fit(input_X, y, epochs=args.epochs, callbacks=[tb_callback], batch_size=args.batch_size, class_weight=class_weights)
 
+
+    #SAVE THE MODEL
     model_path = 'models/MLP_lstm_{}/transformer_{}'.format(args.size, args.epochs)
     print("Saving in : " + model_path)
     print(os.path.exists(model_path))

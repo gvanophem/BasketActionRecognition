@@ -29,6 +29,8 @@ if __name__ == "__main__":
     parser.add_argument("--embed", default=512, type=int)
     args = parser.parse_args()
 
+    #GLOBAL PARAMETERS
+
     path = os.path.join("..", "data")
     T=args.size
     timestep = 200
@@ -44,6 +46,8 @@ if __name__ == "__main__":
     class_names_dic = {label:num for num,label in enumerate(class_names_list)}
     count_action_types = {class_names_dic[label]:0 for label in class_names_list}
     num_classes = 11
+
+    #RECUPERATION OF THE MODEL
 
     checkpoint_dir = "models/MLP_lstm_" + str(args.size)
     print(checkpoint_dir)
@@ -69,18 +73,26 @@ if __name__ == "__main__":
 
     print(os.listdir(path))
 
+    #DATA PREPROCESSING
+
     for game in os.listdir(os.path.join(path, TEST_DIRECTORY)):
         print(game)
+
+        #RETRIEVING DATA
         annotations = read_json(os.path.join(path, TEST_DIRECTORY, game, "annotations.json"))
         detections = read_json(os.path.join(path, TEST_DIRECTORY, game, "detections.json"))["detections_lists"]
         detections.sort(key=lambda x:x['timestamp'])
+
+        #MODIFYING DATA
         actions_ts, actions_durations, actions_labels = clean_labels(annotations)
         windows = []
         labels = []
+
+        #GENERATION OF THE WINDOWS AND THEIR LABELS
         for window, label in sliding_labels(actions_ts, actions_durations, actions_labels, detections, T):
             data_window = data_to_train(window, WINDOW_SIZE)
-            #sorted_window = sort_sequence(data_window)
-            sorted_window = data_window.reshape((1,WINDOW_SIZE*3*(NUM_PLAYERS+NUM_REF)))
+            sorted_window = sort_sequence(data_window)
+            sorted_window = sorted_window.reshape((1,WINDOW_SIZE*3*(NUM_PLAYERS+NUM_REF)))
             count_action_types[class_names_dic[label]] += 1
 
             data_X.append(sorted_window)
@@ -91,15 +103,19 @@ if __name__ == "__main__":
     print(X.shape)
     X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
 
+    #CREATION OF THE CLS TOKEN FOR EACH WINDOW
     cls_tokens = tf.Variable(tf.random.normal([X_tensor.shape[0], 1, embedding_dim]), name='cls_tokens')
 
     print(X_tensor.shape)
 
+
+    #CONCATENATION OF THE CLS TOKEN
     input_X = tf.concat([cls_tokens, X_tensor], axis=2)
     print(input_X.shape)
     y = to_categorical(data_y).astype(int)
     y = np.array(y)
 
+    #PREDICTION OF THE MODEL
     if T==200:
         predicted_labels = model.predict(X)
     else:
@@ -117,6 +133,8 @@ if __name__ == "__main__":
     with np.printoptions(threshold=np.inf):
         print(test_labels)
 
+
+    #ACCURACY CALCULATION
     num_correct = np.sum(test_labels == pred)
 
     total_samples = len(test_labels)
@@ -127,6 +145,8 @@ if __name__ == "__main__":
 
     print("Accuracy of model " + str(latest) + " is " + str(accuracy))
 
+
+    #SAVE THE OUPUTTED DATA
     save_file = 'numpy_output/data_size{}_epochs{}_embed{}_thirdDense{}.npy'.format(str(T), str(args.epochs), str(embedding_dim), str(thirdDense))
     with open(save_file, 'wb') as f:
         np.save(f, test_labels)

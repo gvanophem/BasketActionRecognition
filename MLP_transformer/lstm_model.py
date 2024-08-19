@@ -7,6 +7,7 @@ import tensorflow as tf
 import math
 
 def create_mlp(input_shape, first_units, second_units):
+    #Not Used
     mlp_input = Input(shape=input_shape)
     dense_1 = Dense(first_units, activation='relu')(mlp_input)
     dense_2 = Dense(second_units, activation='relu')(dense_1)
@@ -19,6 +20,7 @@ def gelu(x):
     #return max(0,x)     
 
 class MultiHeadSelfAttention(tf.keras.layers.Layer):
+    #Class for the Multi-Head Self-Attention Layer
     def __init__(self, embed_dim, num_heads=8):
         super(MultiHeadSelfAttention, self).__init__()
         self.embed_dim = embed_dim
@@ -66,6 +68,7 @@ class MultiHeadSelfAttention(tf.keras.layers.Layer):
 
 
 class Transformer(tf.keras.layers.Layer):
+    # Class for the Transformer Layer
     # Code for this transformer inspired from https://www.geeksforgeeks.org/transformer-model-from-scratch-using-tensorflow/
     # Also required a little bit of help from ChatGPT to adapt it
     def __init__(self, embed_dim, num_heads, mlp_dim, dropout=0.4):
@@ -96,6 +99,50 @@ class Transformer(tf.keras.layers.Layer):
         return mlp_output + out1
     
 def create_model(win_size, seq_len, num_players=10, num_referees=3, first_dense=64, second_dense=32, third_dense=64, last_dense=64, num_classes=11, num_heads=4, ff_dim=64, n=1):
+    """This method creates the model without CLS token
+
+    Parameters
+    ----------
+    win_size : int
+        Size of the window which 
+    
+    seq_len : int
+        Length of the sequence received as input for each detection in the window
+
+    num_players : int
+        Number of Players in the game
+
+    num_referees : int
+        Number of referees in the game
+
+    first_dense : int
+        Size of the first Dense Layer of the MLP
+    
+    second_dense : int
+        Size of the second Dense Layer of the MLP
+
+    third_dense : int
+        Size of the  Dense Layer at the end of the Transformer
+
+    last_dense : int
+        Size of the last Dense Layer before the output layer.
+
+    num_classes : int
+        Number of classes for classification
+
+    num_heads : int
+        Number of Self-Attention Heads used in the Transformer
+
+    ff_dim : int
+        Dimension of the feed-forward layer
+
+    n : int
+        indicator of the ssize of the LSTM network
+
+    Returns
+    -------
+    The model with the required parameters
+    """
     input_layer = Input(shape=(win_size, seq_len))
 
     reshaped_input = Reshape((num_players+num_referees, 3))(input_layer)
@@ -131,6 +178,52 @@ def create_model(win_size, seq_len, num_players=10, num_referees=3, first_dense=
     return model
 
 def create_model_cls(win_size, seq_len, num_players=10, num_referees=3, first_dense=64, second_dense=32, third_dense=64, last_dense=64, num_classes=11, num_heads=4, ff_dim=64, n=1):
+    """This method creates the model with a CLS token
+
+    Parameters
+    ----------
+    win_size : int
+        Size of the window which 
+    
+    seq_len : int
+        Length of the sequence received as input for each detection in the window
+
+    num_players : int
+        Number of Players in the game
+
+    num_referees : int
+        Number of referees in the game
+
+    first_dense : int
+        Size of the first Dense Layer of the MLP
+    
+    second_dense : int
+        Size of the second Dense Layer of the MLP
+
+    third_dense : int
+        Size of the  Dense Layer at the end of the Transformer
+
+    last_dense : int
+        Size of the last Dense Layer before the output layer.
+
+    num_classes : int
+        Number of classes for classification
+
+    num_heads : int
+        Number of Self-Attention Heads used in the Transformer
+
+    ff_dim : int
+        Dimension of the feed-forward layer
+
+    n : int
+        indicator of the ssize of the LSTM network
+
+    Returns
+    -------
+    The model with the required parameters
+    """
+
+
 
     input_layer = Input(shape=(1, seq_len))
 

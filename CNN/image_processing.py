@@ -75,6 +75,23 @@ def create_image(window):
     return resized_image
 
 def find_detection_index(timestamp, detections, index):
+    """This method finds the next detection which timestamp is greater than the timestamp given in parameter
+
+    Parameters
+    ----------
+    timestamp : int
+        Timestamp of the next detection we want to find
+
+    detections : list
+        List of all the player detections
+
+    index : int
+        index from which we need to start looking for the next detection
+
+    Returns
+    -------
+    The index of the found detection, -1 if this detection is not possible to find.
+    """
     i = 0
     len_detection = len(detections)
     while index + i < len_detection:
@@ -84,6 +101,29 @@ def find_detection_index(timestamp, detections, index):
     return -1
 
 def sliding_labels(actions_ts, actions_durations, actions_labels, detections, size):
+    """This method applies a sliding window on the data and outputs the window composed of detections and the label of this window
+
+    Parameters
+    ----------
+    actions_ts : list
+        All the starting action timestamps
+    
+    actions_durations : list
+        All the durations of the actions
+
+    actions_labels : list
+        All the labels of the actions
+
+    detections : list
+        List of all the player detections
+
+    size : int
+        size in terms of time of the sliding window
+
+    Returns
+    -------
+    A list of all windows and their corresponding labels
+    """
     i = 0
     action_index = 0
     detection_len = len(detections)
@@ -124,6 +164,17 @@ def sliding_labels(actions_ts, actions_durations, actions_labels, detections, si
            break
 
 def clean_labels(annotations):
+  """This method modifies the Slow, Normal, and Fast Transitions to give them the same structure than the other actions
+
+    Parameters
+    ----------
+    annotations : dict
+        Dictionary containing all the informations about all the actions
+
+    Returns
+    -------
+    3 lists representing the action starting timestamps, the action durations and the action labels with the Transition structure modified
+    """
   #remove slow transitions
   actions_ts = np.array(annotations['actions_ts'])
   actions_durations = np.array(annotations['actions_durations'])

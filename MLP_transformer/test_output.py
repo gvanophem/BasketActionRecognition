@@ -10,6 +10,9 @@ from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import top_k_accuracy_score
 import seaborn as sns
 
+
+#ACCURACY DATA FOR VARIATION OF THIRD DENSE
+
 thirdDense = [32,64,128, 256, 512, 1024]
 accuracies = [22, 27, 31,  39, 42, 40]
 
@@ -23,6 +26,7 @@ plt.show()
 
 
 def data_for_iou(y):
+    #modification of the frame per frame output detection to boxes of consecutive frames having the same label
     detections = []
     i=0
     while i<len(y):
@@ -35,6 +39,7 @@ def data_for_iou(y):
     return detections
 
 def intersection_on_union(detection, truth):
+    #computation of the IoU between 2 boxes
     first_interval = detection[1:]
     second_interval = truth[1:]
 
@@ -45,8 +50,9 @@ def intersection_on_union(detection, truth):
         return 0
 
     return intersection/union
-def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, num_classes=11):
 
+def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, num_classes=11):
+    # function that calculates the average precision at k for every class
     # code inspired by https://github.com/aladdinpersson/Machine-Learning-Collection/blob/master/ML/Pytorch/object_detection/metrics/mean_avg_precision.py
     # found on a youtube video of Aladdin Persson
 
@@ -102,6 +108,7 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, num_classe
         average_precisions.append(np.trapz(precisions, x=recalls))
     return average_precisions
 
+#RETRIEVE OUTPUTTED DATA
 with open("data_size400_epochs400_embed512_thirdDense512.npy", 'rb') as f:
     a = np.load(f)
     b = np.load(f)
@@ -109,7 +116,7 @@ with open("data_size400_epochs400_embed512_thirdDense512.npy", 'rb') as f:
 
 print(np.sum(a==b)/len(a))
 
-
+#CONFUSION MATRIX METRICS
 cm = confusion_matrix(a,b)
 
 """disp = ConfusionMatrixDisplay(confusion_matrix=cm)
@@ -126,6 +133,8 @@ plt.title('Confusion Matrix for LSTM')
 plt.savefig('confusion.png')
 plt.show()
 
+
+#TOP-K ACCURACIES
 top_accuracies = []
 x=[]
 for i in range(1, 12):
@@ -142,13 +151,15 @@ plt.title('Accuracy of LSTM based on the value of k')
 plt.savefig('top_k.png')
 plt.show()
 
-
+#CALCULATION OF F1-SCORE, RECALL, PRECISION,...
 print(classification_report(a,b))
 
 
 a_boxes = data_for_iou(a)
 b_boxes = data_for_iou(b)
 
+
+#COMPUTATION OF AVERAGE PRECISION
 print(mean_average_precision(b_boxes, a_boxes, iou_threshold=0.05))
 
 
